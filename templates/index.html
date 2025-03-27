@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF Assistant</title>
+  <style>
+    /* Define CSS Variables for light & dark themes */
+    :root {
+      --bg-color: #f4f4f4;
+      --text-color: #333;
+      --nav-bg: #fff;
+      --btn-bg: #4CAF50;
+      --btn-text: #fff;
+      --toggle-bg: #ccc;
+      --toggle-slider: #fff;
+      --accent-color: #4CAF50;
+    }
+    [data-theme="dark"] {
+      --bg-color: #121212;
+      --text-color: #e0e0e0;
+      --nav-bg: #1e1e1e;
+      --btn-bg: #009688;
+      --btn-text: #fff;
+      --toggle-bg: #444;
+      --toggle-slider: #fff;
+      --accent-color: #009688;
+    }
+
+    /* Global Styles */
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      transition: background-color 0.3s, color 0.3s;
+    }
+    h1, h2 {
+      margin: 0 0 15px;
+    }
+    /* Navbar */
+    .navbar {
+      background-color: var(--nav-bg);
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      padding: 10px 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .navbar > div {
+      margin-left: 20px;
+    }
+
+    /* Toggle Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 26px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--toggle-bg);
+      transition: 0.4s;
+      border-radius: 26px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 3px;
+      bottom: 3px;
+      background-color: var(--toggle-slider);
+      transition: 0.4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: var(--accent-color);
+    }
+    input:checked + .slider:before {
+      transform: translateX(24px);
+    }
+    /* Language Selector */
+    .language-toggle select {
+      padding: 5px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      background: var(--nav-bg);
+      color: var(--text-color);
+    }
+
+    /* Main Content Layout */
+    #content {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+    main {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+    }
+    .prompt-container, .result-container {
+      background: var(--nav-bg);
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      animation: fadeIn 0.5s ease-in;
+    }
+    .prompt-container textarea {
+      width: 100%;
+      height: 120px;
+      padding: 10px;
+      margin-bottom: 15px;
+      resize: vertical;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 1rem;
+      background: var(--bg-color);
+      color: var(--text-color);
+    }
+    .prompt-container button {
+      padding: 10px 20px;
+      background: var(--btn-bg);
+      border: none;
+      border-radius: 4px;
+      color: var(--btn-text);
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.2s;
+    }
+    .prompt-container button:hover {
+      transform: translateY(-2px);
+    }
+    /* Loading Screen */
+    #loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-color);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      transition: opacity 0.3s ease;
+    }
+    .loader {
+      border: 8px solid #f3f3f3;
+      border-top: 8px solid var(--accent-color);
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 15px;
+    }
+    /* Animations */
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Loading Screen -->
+  <div id="loading-screen" style="display: none;">
+    <div class="loader"></div>
+    <p>Processing your request...</p>
+  </div>
+
+  <!-- Main Content -->
+  <div id="content">
+    <nav class="navbar">
+      <div class="toggle-switch">
+        <label class="switch">
+          <input type="checkbox" id="darkModeToggle" />
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="language-toggle">
+        <select id="languageSelect">
+          <option value="en">English</option>
+          <option value="ta">Tamil</option>
+        </select>
+      </div>
+    </nav>
+
+    <main>
+      <section class="prompt-container">
+        <h1>Ask Your Question</h1>
+        <textarea id="promptInput" placeholder="Enter your prompt here..."></textarea>
+        <button id="submitButton">Submit</button>
+      </section>
+
+      <section class="result-container">
+        <h2>Response</h2>
+        <div id="resultOutput"></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // Toggle Dark/Light Mode
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    darkModeToggle.addEventListener('change', function() {
+      if (this.checked) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    });
+    document.documentElement.setAttribute('data-theme', 'light');
+
+    // Handle Submit Button Click
+    const submitButton = document.getElementById('submitButton');
+    const promptInput = document.getElementById('promptInput');
+    const resultOutput = document.getElementById('resultOutput');
+    const languageSelect = document.getElementById('languageSelect');
+    const loadingScreen = document.getElementById('loading-screen');
+    const content = document.getElementById('content');
+
+    submitButton.addEventListener('click', () => {
+      const promptText = promptInput.value.trim();
+      const selectedLang = languageSelect.value;
+      if (!promptText) return;
+
+      // Show loading screen and hide content
+      loadingScreen.style.display = 'flex';
+      content.style.display = 'none';
+
+      // Call the backend API
+      fetch('/ask', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          query: promptText,
+          language: selectedLang
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        resultOutput.textContent = data.answer;
+        // Hide loading screen and show content
+        loadingScreen.style.display = 'none';
+        content.style.display = 'block';
+      })
+      .catch(err => {
+        resultOutput.textContent = "Error processing request.";
+        loadingScreen.style.display = 'none';
+        content.style.display = 'block';
+      });
+    });
+  </script>
+</body>
+</html>
