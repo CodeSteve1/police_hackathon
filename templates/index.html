@@ -49,11 +49,12 @@
       align-items: center;
       padding: 10px 20px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      position: relative;
+      z-index: 1000;
     }
     .navbar > div {
       margin-left: 20px;
     }
-
     /* Toggle Switch */
     .switch {
       position: relative;
@@ -104,10 +105,11 @@
     }
 
     /* Main Content Layout */
-    #content {
+    #main-content {
       max-width: 900px;
       margin: 40px auto;
       padding: 0 20px;
+      margin-left: 280px; /* leave space for sidebar */
     }
     main {
       display: flex;
@@ -170,6 +172,38 @@
       animation: spin 1s linear infinite;
       margin-bottom: 15px;
     }
+    /* Conversation History Sidebar */
+    #conversationHistory {
+      position: fixed;
+      top: 60px;
+      left: 0;
+      width: 260px;
+      height: calc(100% - 60px);
+      background: var(--nav-bg);
+      border-right: 1px solid #ccc;
+      overflow-y: auto;
+      padding: 10px;
+      font-size: 0.9rem;
+    }
+    #conversationHistory h3 {
+      margin-top: 0;
+      font-size: 1.1rem;
+    }
+    .conv-item {
+      margin-bottom: 10px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid #ddd;
+    }
+    .conv-item:last-child {
+      border-bottom: none;
+    }
+    .conv-item .user {
+      font-weight: bold;
+    }
+    .conv-item .assistant {
+      margin-left: 10px;
+      color: var(--accent-color);
+    }
     /* Animations */
     @keyframes spin {
       0% { transform: rotate(0deg); }
@@ -188,8 +222,14 @@
     <p>Processing your request...</p>
   </div>
 
+  <!-- Conversation History Sidebar -->
+  <div id="conversationHistory">
+    <h3>Conversation History</h3>
+    <!-- Conversation items will be appended here -->
+  </div>
+
   <!-- Main Content -->
-  <div id="content">
+  <div id="main-content">
     <nav class="navbar">
       <div class="toggle-switch">
         <label class="switch">
@@ -231,22 +271,40 @@
     });
     document.documentElement.setAttribute('data-theme', 'light');
 
-    // Handle Submit Button Click
+    // Get DOM elements
     const submitButton = document.getElementById('submitButton');
     const promptInput = document.getElementById('promptInput');
     const resultOutput = document.getElementById('resultOutput');
     const languageSelect = document.getElementById('languageSelect');
     const loadingScreen = document.getElementById('loading-screen');
-    const content = document.getElementById('content');
+    const mainContent = document.getElementById('main-content');
+    const convHistoryDiv = document.getElementById('conversationHistory');
 
+    // Array to hold conversation history items
+    let conversationHistory = [];
+
+    // Function to update the conversation history sidebar
+    function updateConversationHistory() {
+      // Clear current history
+      convHistoryDiv.innerHTML = '<h3>Conversation History</h3>';
+      conversationHistory.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'conv-item';
+        div.innerHTML = `<div class="user">User: ${item.query}</div>
+                         <div class="assistant">Assistant: ${item.answer}</div>`;
+        convHistoryDiv.appendChild(div);
+      });
+    }
+
+    // Handle Submit Button Click
     submitButton.addEventListener('click', () => {
       const promptText = promptInput.value.trim();
       const selectedLang = languageSelect.value;
       if (!promptText) return;
 
-      // Show loading screen and hide content
+      // Show loading screen and hide main content
       loadingScreen.style.display = 'flex';
-      content.style.display = 'none';
+      mainContent.style.display = 'none';
 
       // Call the backend API
       fetch('/ask', {
@@ -261,15 +319,24 @@
       })
       .then(response => response.json())
       .then(data => {
-        resultOutput.textContent = data.answer;
-        // Hide loading screen and show content
+        const answer = data.answer;
+        resultOutput.textContent = answer;
+
+        // Add the current conversation turn to history
+        conversationHistory.push({ query: promptText, answer: answer });
+        updateConversationHistory();
+
+        // Clear the input
+        promptInput.value = "";
+
+        // Hide loading screen and show main content
         loadingScreen.style.display = 'none';
-        content.style.display = 'block';
+        mainContent.style.display = 'block';
       })
       .catch(err => {
         resultOutput.textContent = "Error processing request.";
         loadingScreen.style.display = 'none';
-        content.style.display = 'block';
+        mainContent.style.display = 'block';
       });
     });
   </script>
