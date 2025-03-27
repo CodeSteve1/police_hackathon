@@ -5,6 +5,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.vectorstores import FAISS
 from langchain.schema import Document
+from deep_translator import GoogleTranslator
 
 def extract_text_from_pdf(pdf_path):
     """Extract text from a PDF and return it as a string."""
@@ -124,6 +125,9 @@ def main():
         answer = generate_with_ollama(prompt)
         print("\nAnswer from Ollama:")
         print(answer)
+        print("\nAnswer from Ollama:")
+        translated_text = GoogleTranslator(source="en", target="ta").translate(answer)
+        print(translated_text)
         
         # Save the current turn in the conversation history
         conversation_history.append({
