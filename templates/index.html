@@ -5,67 +5,128 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PDF Assistant</title>
   <style>
-    /* Define CSS Variables for light & dark themes */
+    /* Base Variables */
     :root {
-      --bg-color: #f4f4f4;
-      --text-color: #333;
-      --nav-bg: #fff;
-      --btn-bg: #4CAF50;
+      --primary-color: #3a8b3c;
+      --secondary-color: #2a6f2a;
+      --accent-color: #ff8c00;
+      --bg-light: #f0f4f8;
+      --bg-dark: #1e1e2f;
+      --text-light: #333;
+      --text-dark: #e0e0e0;
+      --nav-light: #ffffff;
+      --nav-dark: #2b2b3d;
+      --card-shadow: rgba(0, 0, 0, 0.15);
+      --transition-speed: 0.3s;
+      --border-radius: 8px;
+    }
+    [data-theme="dark"] {
+      --bg-color: var(--bg-dark);
+      --text-color: var(--text-dark);
+      --nav-bg: var(--nav-dark);
+      --btn-bg: var(--secondary-color);
+      --btn-text: #fff;
+      --toggle-bg: #555;
+      --toggle-slider: #fff;
+      --accent-color: var(--accent-color);
+    }
+    [data-theme="light"] {
+      --bg-color: var(--bg-light);
+      --text-color: var(--text-light);
+      --nav-bg: var(--nav-light);
+      --btn-bg: var(--primary-color);
       --btn-text: #fff;
       --toggle-bg: #ccc;
       --toggle-slider: #fff;
-      --accent-color: #4CAF50;
+      --accent-color: var(--accent-color);
     }
-    [data-theme="dark"] {
-      --bg-color: #121212;
-      --text-color: #e0e0e0;
-      --nav-bg: #1e1e1e;
-      --btn-bg: #009688;
-      --btn-text: #fff;
-      --toggle-bg: #444;
-      --toggle-slider: #fff;
-      --accent-color: #009688;
-    }
+    
     /* Global Styles */
     * {
       box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
     body {
-      margin: 0;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: var(--bg-color);
+      background: var(--bg-color);
       color: var(--text-color);
-      transition: background-color 0.3s, color 0.3s;
+      transition: background-color var(--transition-speed), color var(--transition-speed);
+      overflow-x: hidden;
+    }
+    a {
+      color: inherit;
+      text-decoration: none;
     }
     h1, h2, h3 {
-      margin: 0 0 15px;
+      margin-bottom: 15px;
     }
+    
     /* Navbar */
     .navbar {
-      background-color: var(--nav-bg);
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 20px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      position: relative;
+      padding: 15px 30px;
+      color: #fff;
+      box-shadow: 0 2px 6px var(--card-shadow);
+      position: fixed;
+      width: calc(100% - 260px);
+      left: 260px;
+      top: 0;
       z-index: 1000;
+      border-bottom-left-radius: var(--border-radius);
     }
     .navbar .left-section {
       display: flex;
       align-items: center;
     }
-    .navbar .logo {
-      margin-right: 20px;
-    }
     .navbar .logo img {
-      height: 40px;
+      height: 80px; /* Increased logo size */
       width: auto;
     }
     .navbar .right-section {
       display: flex;
       align-items: center;
+      gap: 20px;
     }
+    /* Upload Button Styles */
+    .upload-btn-wrapper {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+    }
+    .upload-btn {
+      border: none;
+      color: var(--btn-text);
+      background: var(--btn-bg);
+      padding: 8px 15px;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .upload-btn-wrapper input[type=file] {
+      font-size: 100px;
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    /* Model Select Styles (populated from Python) */
+    .model-select-wrapper {
+      display: inline-block;
+    }
+    .model-select-wrapper select {
+      padding: 5px 10px;
+      border-radius: 4px;
+      border: none;
+      font-size: 1rem;
+      background: var(--nav-bg);
+      color: var(--text-color);
+    }
+    
     /* Toggle Switch */
     .switch {
       position: relative;
@@ -73,20 +134,13 @@
       width: 50px;
       height: 26px;
     }
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
+    .switch input { opacity: 0; width: 0; height: 0; }
     .slider {
       position: absolute;
       cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
+      top: 0; left: 0; right: 0; bottom: 0;
       background-color: var(--toggle-bg);
-      transition: 0.4s;
+      transition: var(--transition-speed);
       border-radius: 26px;
     }
     .slider:before {
@@ -97,7 +151,7 @@
       left: 3px;
       bottom: 3px;
       background-color: var(--toggle-slider);
-      transition: 0.4s;
+      transition: var(--transition-speed);
       border-radius: 50%;
     }
     input:checked + .slider {
@@ -106,83 +160,150 @@
     input:checked + .slider:before {
       transform: translateX(24px);
     }
+    
     /* Language Selector */
     .language-toggle select {
-      padding: 5px;
+      padding: 5px 10px;
       border-radius: 4px;
-      border: 1px solid #ccc;
+      border: none;
+      font-size: 1rem;
       background: var(--nav-bg);
       color: var(--text-color);
     }
-    /* Main Content Layout */
+    
+    /* Sidebar for Conversation History */
+    #conversationHistory {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 260px;
+      height: 100vh;
+      background-color: var(--nav-bg);
+      border-right: 1px solid var(--card-shadow);
+      overflow-y: auto;
+      padding: 20px;
+      transition: background-color var(--transition-speed);
+    }
+    #conversationHistory h3 {
+      margin-bottom: 15px;
+      font-size: 1.2rem;
+      color: var(--accent-color);
+    }
+    #clearHistoryBtn {
+      display: block;
+      margin-bottom: 15px;
+      padding: 5px 10px;
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .conv-item {
+      background: var(--bg-color);
+      padding: 10px 15px;
+      margin-bottom: 15px;
+      border-radius: var(--border-radius);
+      box-shadow: 0 1px 3px var(--card-shadow);
+      transition: transform var(--transition-speed);
+      position: relative;
+    }
+    .conv-item:hover { transform: scale(1.02); }
+    .conv-item .user {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .conv-item .assistant {
+      margin-left: 10px;
+      color: var(--accent-color);
+      font-style: italic;
+    }
+    .view-sources-btn {
+      background: var(--secondary-color);
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 5px 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+    }
+    
+    /* Main Content */
     #main-content {
-      max-width: 900px;
-      margin: 40px auto;
-      padding: 0 20px;
-      margin-left: 280px; /* leave space for sidebar */
+      margin: 100px 30px 30px 300px;
+      transition: margin var(--transition-speed);
     }
     main {
       display: flex;
       flex-direction: column;
-      gap: 30px;
+      gap: 40px;
     }
+    
+    /* Prompt & Response Containers */
     .prompt-container, .result-container {
       background: var(--nav-bg);
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      animation: fadeIn 0.5s ease-in;
+      padding: 25px;
+      border-radius: var(--border-radius);
+      box-shadow: 0 2px 8px var(--card-shadow);
+      transition: background-color var(--transition-speed);
     }
     .prompt-container textarea {
       width: 100%;
-      height: 120px;
-      padding: 10px;
-      margin-bottom: 15px;
+      height: 140px;
+      padding: 15px;
+      margin-bottom: 20px;
       resize: vertical;
       border: 1px solid #ccc;
       border-radius: 4px;
       font-size: 1rem;
       background: var(--bg-color);
       color: var(--text-color);
+      transition: background-color var(--transition-speed), color var(--transition-speed);
     }
     .prompt-container button {
-      padding: 10px 20px;
+      padding: 12px 25px;
       background: var(--btn-bg);
       border: none;
       border-radius: 4px;
       color: var(--btn-text);
       font-size: 1rem;
       cursor: pointer;
-      transition: background 0.3s, transform 0.2s;
+      transition: background var(--transition-speed), transform 0.2s;
     }
     .prompt-container button:hover {
       transform: translateY(-2px);
     }
-    /* Neat Response Card */
+    
+    /* Response Card */
     .response-card {
       background: var(--bg-color);
       border: 1px solid #ccc;
-      border-radius: 8px;
-      padding: 15px;
-      margin-top: 10px;
+      border-radius: var(--border-radius);
+      padding: 20px;
       font-size: 1rem;
-      line-height: 1.5;
+      line-height: 1.6;
       color: var(--text-color);
+      box-shadow: 0 2px 8px var(--card-shadow);
+      position: relative;
     }
-    /* Loading Screen */
+    
+    /* Loading Screen with Animation, Fun Facts, Progress Bar & Fake Scrolling */
     #loading-screen {
       position: fixed;
       top: 0;
       left: 0;
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
       background: var(--bg-color);
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      z-index: 9999;
-      transition: opacity 0.3s ease;
+      z-index: 2000;
+      transition: opacity var(--transition-speed);
     }
     .loader {
       border: 8px solid #f3f3f3;
@@ -190,63 +311,132 @@
       border-radius: 50%;
       width: 60px;
       height: 60px;
-      animation: spin 1s linear infinite;
+      animation: spin 1s linear infinite, pulse 1.5s ease-in-out infinite;
       margin-bottom: 15px;
     }
-    /* Conversation History Sidebar */
-    #conversationHistory {
-      position: fixed;
-      top: 60px;
-      left: 0;
-      width: 260px;
-      height: calc(100% - 60px);
-      background: var(--nav-bg);
-      border-right: 1px solid #ccc;
-      overflow-y: auto;
-      padding: 10px;
-      font-size: 0.9rem;
-    }
-    #conversationHistory h3 {
-      margin-top: 0;
-      font-size: 1.1rem;
-    }
-    .conv-item {
-      margin-bottom: 10px;
-      padding-bottom: 5px;
-      border-bottom: 1px solid #ddd;
-    }
-    .conv-item:last-child {
-      border-bottom: none;
-    }
-    .conv-item .user {
-      font-weight: bold;
-    }
-    .conv-item .assistant {
-      margin-left: 10px;
-      color: var(--accent-color);
-    }
-    /* Animations */
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+    .loading-fact {
+      font-size: 1rem;
+      margin-top: 10px;
+      text-align: center;
+      max-width: 80%;
+      line-height: 1.4;
+      color: var(--accent-color);
+      animation: fadeIn 1s ease-in;
     }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
+    /* Loading Bar */
+    .loading-bar-container {
+      width: 80%;
+      height: 10px;
+      background: #ddd;
+      border-radius: 5px;
+      margin-top: 15px;
+      overflow: hidden;
+    }
+    .loading-bar {
+      width: 0%;
+      height: 100%;
+      background: var(--accent-color);
+      border-radius: 5px;
+      animation: loadingBar 2s infinite;
+    }
+    @keyframes loadingBar {
+      0% { width: 0%; }
+      50% { width: 100%; }
+      100% { width: 0%; }
+    }
+    /* Fake Scrolling Content */
+    .fake-scroll {
+      width: 80%;
+      height: 40px;
+      overflow: hidden;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-top: 15px;
+      position: relative;
+      background: var(--bg-color);
+    }
+    .scroll-content {
+      position: absolute;
+      width: 100%;
+      transform: translateY(100%);
+      animation: fakeScroll 6s infinite;
+    }
+    @keyframes fakeScroll {
+      0% { transform: translateY(100%); }
+      20% { transform: translateY(60%); }
+      40% { transform: translateY(40%); }
+      60% { transform: translateY(20%); }
+      80% { transform: translateY(0%); }
+      100% { transform: translateY(-20%); }
+    }
+    
+    /* Modal for Viewing Sources */
+    .modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      background: var(--nav-bg);
+      padding: 20px 30px;
+      border-radius: var(--border-radius);
+      box-shadow: 0 2px 8px var(--card-shadow);
+      z-index: 2500;
+      transition: transform 0.3s ease-out;
+      max-width: 80%;
+      max-height: 80%;
+      overflow-y: auto;
+    }
+    .modal.show {
+      transform: translate(-50%, -50%) scale(1);
+    }
+    .modal h3 {
+      margin-bottom: 10px;
+      color: var(--accent-color);
+    }
+    .modal button {
+      margin-top: 15px;
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      border: none;
+      padding: 8px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
-  <!-- Loading Screen -->
+  <!-- Loading Screen with Animation, Fun Facts, Progress Bar & Fake Scrolling -->
   <div id="loading-screen" style="display: none;">
     <div class="loader"></div>
     <p id="loadingText">Processing your request...</p>
+    <div class="loading-bar-container"><div class="loading-bar"></div></div>
+    <div class="loading-fact" id="loadingFact"></div>
+    <div class="fake-scroll">
+      <div class="scroll-content">
+        <p>Loading content... Please wait...</p>
+        <p>Almost there... Hang tight...</p>
+        <p>Retrieving data... Stay tuned...</p>
+      </div>
+    </div>
   </div>
 
   <!-- Conversation History Sidebar -->
   <div id="conversationHistory">
     <h3 id="historyHeading">Conversation History</h3>
-    <!-- Only the last two conversation turns will be shown -->
+    <button id="clearHistoryBtn">Clear History</button>
+    <!-- Conversation items will be injected here -->
   </div>
 
   <!-- Main Content -->
@@ -254,10 +444,22 @@
     <nav class="navbar">
       <div class="left-section">
         <div class="logo">
-          <img src="/static/logo.jpeg" alt="Logo" />
+          <img src="/static/logo.png" alt="Logo" />
         </div>
       </div>
       <div class="right-section">
+        <div class="upload-btn-wrapper">
+          <button class="upload-btn">Add Files</button>
+          <input type="file" id="fileInput" multiple accept=".pdf" />
+        </div>
+        <div class="model-select-wrapper">
+          <!-- Dynamically populate allowed models from Python -->
+          <select id="modelSelect">
+            {% for model in allowed_models %}
+              <option value="{{ model }}">{{ model }}</option>
+            {% endfor %}
+          </select>
+        </div>
         <div class="toggle-switch">
           <label class="switch">
             <input type="checkbox" id="darkModeToggle" />
@@ -287,18 +489,31 @@
     </main>
   </div>
 
+  <!-- Modal for Viewing Sources -->
+  <div class="modal" id="contextModal">
+    <h3>Query Context & Sources</h3>
+    <pre id="modalContent" style="white-space: pre-wrap;"></pre>
+    <button id="closeModalBtn">Close</button>
+  </div>
+
   <script>
-    // Language dictionary for static page text
+    // Language dictionary for static page text and police fun facts
     const translations = {
       ta: {
         promptHeading: "உங்கள் கேள்வியை கேளுங்கள்",
         promptPlaceholder: "உங்கள் கேள்வியை இங்கு உள்ளிடவும்...",
         submitButton: "சமர்ப்பிக்கவும்",
         responseHeading: "பதில்",
-        loadingText: "உங்கள் கோரிக்கையை செயலாக்குகிறது...",
+        loadingText: "கோரிக்கையை செயலாக்குகிறது...",
         historyHeading: "முன் உரையாடல்",
+        clearHistory: "முன் உரையாடலை நீக்கு",
         userLabel: "பயனர்:",
-        assistantLabel: "உதவியாளர்:"
+        assistantLabel: "உதவியாளர்:",
+        policeFunFacts: [
+          "அறிவுக்கு சுவாரசியம்: இந்திய காவல்துறையின் சில நிலையங்கள் வரலாற்று பாரம்பரிய இடங்களாக விளங்குகின்றன.",
+          "சுவாரசியம்: இந்திய காவல்துறை 'சேவை, பாதுகாப்பு, சமூகம்' என்ற கொள்கையை பின்பற்றுகிறது.",
+          "குறிப்பு: காவல் துறையில் குழு பணியில் சிறந்த ஒத்துழைப்பு உள்ளது."
+        ]
       },
       en: {
         promptHeading: "Ask Your Question",
@@ -307,20 +522,67 @@
         responseHeading: "Response",
         loadingText: "Processing your request...",
         historyHeading: "Conversation History",
+        clearHistory: "Clear History",
         userLabel: "User:",
-        assistantLabel: "Assistant:"
+        assistantLabel: "Assistant:",
+        policeFunFacts: [
+          "Did you know? Some Indian police stations are historic landmarks.",
+          "Fun fact: The Indian police motto emphasizes 'Service, Security, and Society.'",
+          "Note: Teamwork is a key value in the police force."
+        ]
       }
     };
 
-    // Function to convert markdown-like bold ( **text** ) to HTML <strong> tags
+    // Convert markdown-like bold ( **text** ) to <strong> tags
     function formatResponse(text) {
       return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     }
 
-    // This variable will store the last response's original English text
-    let lastEnglishResponse = "";
+    // Format answer into neat bullet points if applicable
+    function formatAnswer(text) {
+      // Apply markdown formatting for bold
+      text = formatResponse(text);
+      // Split into lines
+      let lines = text.split(/\n/).filter(line => line.trim() !== '');
+      
+      // Check if each line starts with a number or bullet marker
+      const numberedLine = /^\s*\d+[\.\)]\s*/;
+      const bulletLine = /^\s*[-*]\s*/;
+      
+      if (lines.every(line => numberedLine.test(line) || bulletLine.test(line))) {
+        let listHTML = "<ol>";
+        lines.forEach(line => {
+          line = line.replace(numberedLine, '').replace(bulletLine, '');
+          listHTML += `<li>${line.trim()}</li>`;
+        });
+        listHTML += "</ol>";
+        return listHTML;
+      } else {
+        // Otherwise, return as paragraphs
+        return lines.map(line => `<p>${line}</p>`).join("");
+      }
+    }
 
-    // Function to update the page texts based on language selection
+    let lastEnglishResponse = "";
+    let conversationHistory = []; // full conversation history
+
+    // Update loading fun fact based on current language; cycle through fun facts every 3 seconds
+    let loadingFactInterval;
+    function startLoadingFactCycle(lang) {
+      updateLoadingFact(lang);
+      loadingFactInterval = setInterval(() => {
+        updateLoadingFact(lang);
+      }, 3000);
+    }
+    function stopLoadingFactCycle() {
+      clearInterval(loadingFactInterval);
+    }
+    function updateLoadingFact(lang) {
+      const facts = translations[lang].policeFunFacts;
+      const randomFact = facts[Math.floor(Math.random() * facts.length)];
+      document.getElementById("loadingFact").innerText = randomFact;
+    }
+
     function updatePageLanguage(lang) {
       document.getElementById("promptHeading").innerText = translations[lang].promptHeading;
       document.getElementById("promptInput").placeholder = translations[lang].promptPlaceholder;
@@ -330,7 +592,6 @@
       document.getElementById("historyHeading").innerText = translations[lang].historyHeading;
       updateConversationHistory();
 
-      // Update currently displayed response based on stored English version
       if (lastEnglishResponse.trim() !== "") {
         if (lang === "ta") {
           fetch("/translate", {
@@ -340,11 +601,10 @@
           })
           .then(response => response.json())
           .then(data => {
-            document.getElementById("resultOutput").innerHTML = formatResponse(data.translated);
+            document.getElementById("resultOutput").innerHTML = formatAnswer(data.translated);
           });
         } else {
-          // For English, simply show the original
-          document.getElementById("resultOutput").innerHTML = formatResponse(lastEnglishResponse);
+          document.getElementById("resultOutput").innerHTML = formatAnswer(lastEnglishResponse);
         }
       }
     }
@@ -360,39 +620,32 @@
     });
     document.documentElement.setAttribute('data-theme', 'light');
 
-    // Get DOM elements
+    // DOM Elements
     const submitButton = document.getElementById('submitButton');
     const promptInput = document.getElementById('promptInput');
     const resultOutput = document.getElementById('resultOutput');
     const languageSelect = document.getElementById('languageSelect');
+    const modelSelect = document.getElementById('modelSelect');
     const loadingScreen = document.getElementById('loading-screen');
     const mainContent = document.getElementById('main-content');
     const convHistoryDiv = document.getElementById('conversationHistory');
+    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+    const contextModal = document.getElementById('contextModal');
+    const modalContent = document.getElementById('modalContent');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const fileInput = document.getElementById('fileInput');
 
-    // Array to hold conversation history items.
-    // Each item now stores query, answer (displayed) and englishAnswer.
-    let conversationHistory = [];
-
-    // Function to truncate text (if too long)
     function truncate(text, maxLen = 100) {
       return text.length > maxLen ? text.substring(0, maxLen) + "..." : text;
     }
 
-    // Function to update the conversation history sidebar (show only last 2 turns)
     function updateConversationHistory() {
-      convHistoryDiv.innerHTML = `<h3 id="historyHeading">${translations[languageSelect.value].historyHeading}</h3>`;
-      const recentConversations = conversationHistory.slice(-2);
-      recentConversations.forEach(item => {
-        // For each conversation, display based on current language
+      convHistoryDiv.innerHTML = `<h3 id="historyHeading">${translations[languageSelect.value].historyHeading}</h3>
+                                  <button id="clearHistoryBtn">${translations[languageSelect.value].clearHistory}</button>`;
+      conversationHistory.forEach((item, index) => {
         let displayedQuery = item.query;
-        let displayedAnswer = item.englishAnswer; // default english
+        let displayedAnswer = item.englishAnswer;
         if (languageSelect.value === "ta") {
-          // Translate each conversation turn if Tamil is selected
-          // For simplicity, we use the /translate endpoint synchronously here
-          // (In production, you might want to pre-translate on the backend)
-          // We'll assume the translation is instantaneous.
-          // Note: This is a simple approach and may require refinement.
-          displayedQuery = item.query; // or translate if desired
           displayedAnswer = item.translatedAnswer || item.englishAnswer;
         }
         const formattedQuery = formatResponse(truncate(displayedQuery, 80));
@@ -400,73 +653,111 @@
         const div = document.createElement('div');
         div.className = 'conv-item';
         div.innerHTML = `<div class="user">${translations[languageSelect.value].userLabel} ${formattedQuery}</div>
-                         <div class="assistant">${translations[languageSelect.value].assistantLabel} ${formattedAnswer}</div>`;
+                         <div class="assistant">${translations[languageSelect.value].assistantLabel} ${formattedAnswer}</div>
+                         <button class="view-sources-btn" data-index="${index}">View Sources</button>`;
         convHistoryDiv.appendChild(div);
+      });
+      // Clear History event
+      document.getElementById("clearHistoryBtn").addEventListener("click", () => {
+        conversationHistory = [];
+        updateConversationHistory();
+      });
+      // View Sources event
+      document.querySelectorAll(".view-sources-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          const idx = e.target.getAttribute("data-index");
+          showContextModal(conversationHistory[idx].context);
+        });
       });
     }
 
-    // Handle language change immediately (update static page text and retranslate response)
-    languageSelect.addEventListener('change', () => {
-      const selectedLang = languageSelect.value;
-      updatePageLanguage(selectedLang);
+    // Show modal for viewing sources
+    function showContextModal(contextText) {
+      modalContent.innerText = contextText;
+      contextModal.classList.add("show");
+    }
+    closeModalBtn.addEventListener("click", () => {
+      contextModal.classList.remove("show");
     });
 
-    // Handle Submit Button Click
+    languageSelect.addEventListener('change', () => {
+      updatePageLanguage(languageSelect.value);
+    });
+
     submitButton.addEventListener('click', () => {
       const promptText = promptInput.value.trim();
       const selectedLang = languageSelect.value;
+      const selectedModel = modelSelect.value;
       if (!promptText) return;
 
-      // Show loading screen and hide main content
+      updateLoadingFact(selectedLang);
+      startLoadingFactCycle(selectedLang);
       loadingScreen.style.display = 'flex';
       mainContent.style.display = 'none';
 
-      // Call the backend API
       fetch('/ask', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          query: promptText,
-          language: selectedLang
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          query: promptText, 
+          language: selectedLang,
+          history: conversationHistory,
+          model: selectedModel
         })
       })
       .then(response => response.json())
       .then(data => {
-        // Store the original English answer and update the display accordingly
+        stopLoadingFactCycle();
         lastEnglishResponse = data.english_answer;
         if (selectedLang === "ta") {
-          resultOutput.innerHTML = formatResponse(data.answer);
+          resultOutput.innerHTML = formatAnswer(data.answer);
         } else {
-          resultOutput.innerHTML = formatResponse(data.english_answer);
+          resultOutput.innerHTML = formatAnswer(data.english_answer);
         }
-
-        // Save the current conversation turn (store both versions)
         conversationHistory.push({ 
           query: promptText, 
           answer: data.answer, 
           englishAnswer: data.english_answer,
-          // Optionally, store translated answer for conversation history if needed:
-          translatedAnswer: data.answer 
+          translatedAnswer: data.answer,
+          context: data.context
         });
         updateConversationHistory();
-
-        // Clear the input
         promptInput.value = "";
-
-        // Hide loading screen and show main content
         loadingScreen.style.display = 'none';
         mainContent.style.display = 'block';
       })
       .catch(err => {
+        stopLoadingFactCycle();
         resultOutput.innerText = "Error processing request.";
         loadingScreen.style.display = 'none';
         mainContent.style.display = 'block';
       });
     });
 
-    // Initialize page language on load
+    // File upload handler
+    fileInput.addEventListener("change", () => {
+      const files = fileInput.files;
+      if (files.length === 0) return;
+
+      const formData = new FormData();
+      for (let file of files) {
+        formData.append("files", file);
+      }
+
+      fetch("/upload", {
+        method: "POST",
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        alert(data.message || data.error);
+      })
+      .catch(err => {
+        alert("Error uploading files.");
+      });
+    });
+
+    // Initialize language on load
     updatePageLanguage(languageSelect.value);
   </script>
 </body>
