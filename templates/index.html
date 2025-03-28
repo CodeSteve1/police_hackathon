@@ -26,7 +26,6 @@
       --toggle-slider: #fff;
       --accent-color: #009688;
     }
-
     /* Global Styles */
     * {
       box-sizing: border-box;
@@ -38,22 +37,34 @@
       color: var(--text-color);
       transition: background-color 0.3s, color 0.3s;
     }
-    h1, h2 {
+    h1, h2, h3 {
       margin: 0 0 15px;
     }
     /* Navbar */
     .navbar {
       background-color: var(--nav-bg);
       display: flex;
-      justify-content: flex-end;
       align-items: center;
+      justify-content: space-between;
       padding: 10px 20px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       position: relative;
       z-index: 1000;
     }
-    .navbar > div {
-      margin-left: 20px;
+    .navbar .left-section {
+      display: flex;
+      align-items: center;
+    }
+    .navbar .logo {
+      margin-right: 20px;
+    }
+    .navbar .logo img {
+      height: 40px;
+      width: auto;
+    }
+    .navbar .right-section {
+      display: flex;
+      align-items: center;
     }
     /* Toggle Switch */
     .switch {
@@ -103,7 +114,6 @@
       background: var(--nav-bg);
       color: var(--text-color);
     }
-
     /* Main Content Layout */
     #main-content {
       max-width: 900px;
@@ -147,6 +157,17 @@
     }
     .prompt-container button:hover {
       transform: translateY(-2px);
+    }
+    /* Neat Response Card */
+    .response-card {
+      background: var(--bg-color);
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 10px;
+      font-size: 1rem;
+      line-height: 1.5;
+      color: var(--text-color);
     }
     /* Loading Screen */
     #loading-screen {
@@ -219,47 +240,115 @@
   <!-- Loading Screen -->
   <div id="loading-screen" style="display: none;">
     <div class="loader"></div>
-    <p>Processing your request...</p>
+    <p id="loadingText">Processing your request...</p>
   </div>
 
   <!-- Conversation History Sidebar -->
   <div id="conversationHistory">
-    <h3>Conversation History</h3>
-    <!-- Conversation items will be appended here -->
+    <h3 id="historyHeading">Conversation History</h3>
+    <!-- Only the last two conversation turns will be shown -->
   </div>
 
   <!-- Main Content -->
   <div id="main-content">
     <nav class="navbar">
-      <div class="toggle-switch">
-        <label class="switch">
-          <input type="checkbox" id="darkModeToggle" />
-          <span class="slider"></span>
-        </label>
+      <div class="left-section">
+        <div class="logo">
+          <img src="/static/logo.jpeg" alt="Logo" />
+        </div>
       </div>
-      <div class="language-toggle">
-        <select id="languageSelect">
-          <option value="en">English</option>
-          <option value="ta">Tamil</option>
-        </select>
+      <div class="right-section">
+        <div class="toggle-switch">
+          <label class="switch">
+            <input type="checkbox" id="darkModeToggle" />
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="language-toggle">
+          <select id="languageSelect">
+            <option value="en">English</option>
+            <option value="ta">Tamil</option>
+          </select>
+        </div>
       </div>
     </nav>
 
     <main>
       <section class="prompt-container">
-        <h1>Ask Your Question</h1>
+        <h1 id="promptHeading">Ask Your Question</h1>
         <textarea id="promptInput" placeholder="Enter your prompt here..."></textarea>
         <button id="submitButton">Submit</button>
       </section>
 
       <section class="result-container">
-        <h2>Response</h2>
-        <div id="resultOutput"></div>
+        <h2 id="responseHeading">Response</h2>
+        <div id="resultOutput" class="response-card"></div>
       </section>
     </main>
   </div>
 
   <script>
+    // Language dictionary for static page text
+    const translations = {
+      ta: {
+        promptHeading: "உங்கள் கேள்வியை கேளுங்கள்",
+        promptPlaceholder: "உங்கள் கேள்வியை இங்கு உள்ளிடவும்...",
+        submitButton: "சமர்ப்பிக்கவும்",
+        responseHeading: "பதில்",
+        loadingText: "உங்கள் கோரிக்கையை செயலாக்குகிறது...",
+        historyHeading: "முன் உரையாடல்",
+        userLabel: "பயனர்:",
+        assistantLabel: "உதவியாளர்:"
+      },
+      en: {
+        promptHeading: "Ask Your Question",
+        promptPlaceholder: "Enter your prompt here...",
+        submitButton: "Submit",
+        responseHeading: "Response",
+        loadingText: "Processing your request...",
+        historyHeading: "Conversation History",
+        userLabel: "User:",
+        assistantLabel: "Assistant:"
+      }
+    };
+
+    // Function to convert markdown-like bold ( **text** ) to HTML <strong> tags
+    function formatResponse(text) {
+      return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    }
+
+    // This variable will store the last response's original English text
+    let lastEnglishResponse = "";
+
+    // Function to update the page texts based on language selection
+    function updatePageLanguage(lang) {
+      document.getElementById("promptHeading").innerText = translations[lang].promptHeading;
+      document.getElementById("promptInput").placeholder = translations[lang].promptPlaceholder;
+      document.getElementById("submitButton").innerText = translations[lang].submitButton;
+      document.getElementById("responseHeading").innerText = translations[lang].responseHeading;
+      document.getElementById("loadingText").innerText = translations[lang].loadingText;
+      document.getElementById("historyHeading").innerText = translations[lang].historyHeading;
+      updateConversationHistory();
+
+      // Update currently displayed response based on stored English version
+      if (lastEnglishResponse.trim() !== "") {
+        if (lang === "ta") {
+          fetch("/translate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: lastEnglishResponse, target: lang })
+          })
+          .then(response => response.json())
+          .then(data => {
+            document.getElementById("resultOutput").innerHTML = formatResponse(data.translated);
+          });
+        } else {
+          // For English, simply show the original
+          document.getElementById("resultOutput").innerHTML = formatResponse(lastEnglishResponse);
+        }
+      }
+    }
+
     // Toggle Dark/Light Mode
     const darkModeToggle = document.getElementById('darkModeToggle');
     darkModeToggle.addEventListener('change', function() {
@@ -280,21 +369,47 @@
     const mainContent = document.getElementById('main-content');
     const convHistoryDiv = document.getElementById('conversationHistory');
 
-    // Array to hold conversation history items
+    // Array to hold conversation history items.
+    // Each item now stores query, answer (displayed) and englishAnswer.
     let conversationHistory = [];
 
-    // Function to update the conversation history sidebar
+    // Function to truncate text (if too long)
+    function truncate(text, maxLen = 100) {
+      return text.length > maxLen ? text.substring(0, maxLen) + "..." : text;
+    }
+
+    // Function to update the conversation history sidebar (show only last 2 turns)
     function updateConversationHistory() {
-      // Clear current history
-      convHistoryDiv.innerHTML = '<h3>Conversation History</h3>';
-      conversationHistory.forEach(item => {
+      convHistoryDiv.innerHTML = `<h3 id="historyHeading">${translations[languageSelect.value].historyHeading}</h3>`;
+      const recentConversations = conversationHistory.slice(-2);
+      recentConversations.forEach(item => {
+        // For each conversation, display based on current language
+        let displayedQuery = item.query;
+        let displayedAnswer = item.englishAnswer; // default english
+        if (languageSelect.value === "ta") {
+          // Translate each conversation turn if Tamil is selected
+          // For simplicity, we use the /translate endpoint synchronously here
+          // (In production, you might want to pre-translate on the backend)
+          // We'll assume the translation is instantaneous.
+          // Note: This is a simple approach and may require refinement.
+          displayedQuery = item.query; // or translate if desired
+          displayedAnswer = item.translatedAnswer || item.englishAnswer;
+        }
+        const formattedQuery = formatResponse(truncate(displayedQuery, 80));
+        const formattedAnswer = formatResponse(truncate(displayedAnswer, 80));
         const div = document.createElement('div');
         div.className = 'conv-item';
-        div.innerHTML = `<div class="user">User: ${item.query}</div>
-                         <div class="assistant">Assistant: ${item.answer}</div>`;
+        div.innerHTML = `<div class="user">${translations[languageSelect.value].userLabel} ${formattedQuery}</div>
+                         <div class="assistant">${translations[languageSelect.value].assistantLabel} ${formattedAnswer}</div>`;
         convHistoryDiv.appendChild(div);
       });
     }
+
+    // Handle language change immediately (update static page text and retranslate response)
+    languageSelect.addEventListener('change', () => {
+      const selectedLang = languageSelect.value;
+      updatePageLanguage(selectedLang);
+    });
 
     // Handle Submit Button Click
     submitButton.addEventListener('click', () => {
@@ -319,11 +434,22 @@
       })
       .then(response => response.json())
       .then(data => {
-        const answer = data.answer;
-        resultOutput.textContent = answer;
+        // Store the original English answer and update the display accordingly
+        lastEnglishResponse = data.english_answer;
+        if (selectedLang === "ta") {
+          resultOutput.innerHTML = formatResponse(data.answer);
+        } else {
+          resultOutput.innerHTML = formatResponse(data.english_answer);
+        }
 
-        // Add the current conversation turn to history
-        conversationHistory.push({ query: promptText, answer: answer });
+        // Save the current conversation turn (store both versions)
+        conversationHistory.push({ 
+          query: promptText, 
+          answer: data.answer, 
+          englishAnswer: data.english_answer,
+          // Optionally, store translated answer for conversation history if needed:
+          translatedAnswer: data.answer 
+        });
         updateConversationHistory();
 
         // Clear the input
@@ -334,11 +460,14 @@
         mainContent.style.display = 'block';
       })
       .catch(err => {
-        resultOutput.textContent = "Error processing request.";
+        resultOutput.innerText = "Error processing request.";
         loadingScreen.style.display = 'none';
         mainContent.style.display = 'block';
       });
     });
+
+    // Initialize page language on load
+    updatePageLanguage(languageSelect.value);
   </script>
 </body>
 </html>

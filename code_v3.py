@@ -60,7 +60,7 @@ def retrieve_context(vector_db, query, k=3):
 # Query Answering
 # --------------------------
 
-def generate_with_ollama(prompt, model="phi4"):
+def generate_with_ollama(prompt, model="llama3.2"):
     """Generate a response using the Ollama CLI with proper encoding."""
     command = ["ollama", "run", model, prompt]
     try:
@@ -114,8 +114,8 @@ def ask():
 
     # Build the prompt
     prompt = (
-        "You are a knowledgeable assistant with access to multiple PDF documents. "
-        "Please carefully review the provided context (including source information) and answer the following query, "
+        "You are a knowledgeable police of the tamilnadu government with access to multiple PDF documents. "
+        "Please carefully review the provided context (including source information) and answer the following query, try to give the results in points and make the answer neately formated after every point give a new line character /n "
         "showing understanding and continuity. "
         "Please answer in the same language as the query.\n\n"
         f"Context:\n{context}\n\n"
@@ -123,14 +123,26 @@ def ask():
         "Answer:"
     )
 
-    # Generate the answer
-    answer = generate_with_ollama(prompt)
+    # Always generate the answer in English first
+    english_answer = generate_with_ollama(prompt)
 
-    # If the user selected Tamil, translate the answer
+    # If Tamil is selected, translate the answer
+    answer = english_answer
     if selected_lang == "ta":
-        answer = GoogleTranslator(source="en", target="ta").translate(answer)
+        answer = GoogleTranslator(source="en", target="ta").translate(english_answer)
 
-    return jsonify({"answer": answer})
+    return jsonify({"answer": answer, "english_answer": english_answer})
+
+@app.route("/translate", methods=["POST"])
+def translate_text():
+    data = request.get_json()
+    text = data.get("text", "")
+    target = data.get("target", "en")
+    if target == "ta":
+        translated = GoogleTranslator(source="en", target="ta").translate(text)
+        return jsonify({"translated": translated})
+    else:
+        return jsonify({"translated": text})
 
 if __name__ == "__main__":
     app.run(debug=True)
